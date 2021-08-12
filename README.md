@@ -11,6 +11,8 @@ STATION_ID=<your id>
 STATION_KEY=<your key>
 ```
 
+some options such as debugging and time between sending data to weather underground 
+can be set in `settings.py`
 
 ## Equipment:
 - battery (9 ~ 24 volt)

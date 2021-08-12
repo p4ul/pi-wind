@@ -4,10 +4,11 @@ import requests
 import serial
 import os
 from dotenv import dotenv_values
+
+from settings import time_between_updates, debug_local
 from wind_stats import WindStats
 
-debug_local = True
-time_between_updates = 5
+
 config = dotenv_values(".env")
 
 print(config['STATION_ID'])
@@ -57,17 +58,16 @@ def read_from_aneometer():
 
 
 windStats = WindStats()
-
+last_upload_time = time.time() - time_between_updates
 while 1:
     try:
         now_time = time.time()
-        last_upload_time = time.time() - time_between_updates
+
         if (now_time - last_time) >= 1:
             last_time = now_time
             current_speed_ms, current_direction = read_from_aneometer()
 
-            windStats.set_winddir(current_direction)
-            windStats.set_windspeedmph(current_speed_ms * ms_to_mph)
+            windStats.add_wind_reading(now_time, current_speed_ms * ms_to_mph, current_direction)
 
             if (now_time - last_upload_time) >= time_between_updates:
                 last_upload_time = time.time()
@@ -78,17 +78,19 @@ while 1:
                 date_str = "&dateutc=now"
 
                 if debug_local:
-                    print("debug")
+                    print("debug" + windStats.to_get_variables())
 
                 else:
                     r = requests.get(
                         WUurl +
                         WUcreds +
                         date_str +
-                        "&winddir=" + str(direction) +
-                        "&windspeedmph=" + str(float(speed_ms) * ms_to_mph) +
+                        windStats.to_get_variables() +
                         "&action=updateraw"
                     )
+                    print("uploaded:" + str(r.status_code))
+
     except:
         print("Unexpected error:", sys.exc_info()[0])
         raise
+
